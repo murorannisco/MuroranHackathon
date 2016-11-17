@@ -1,0 +1,38 @@
+<ons-page ng-controller="TourismDetailController">
+    <ons-toolbar>
+        <div class="left">
+            <ons-toolbar-button ng-click="ons.slidingMenu.setMainPage('top.html', {closeMenu: true});">TOP</ons-toolbar-button>
+        </div>
+        <div class="right">
+            <ons-toolbar-button ng-click="ons.slidingMenu.toggleMenu()">MENU</ons-toolbar-button>
+        </div>
+        <div class="center">おすすめ！</div>
+    </ons-toolbar>
+    <div>
+        <table width=100% align=center>
+            <tr align=center>
+                <td><img width=100% src="{{image}}"></td>
+            </tr>
+            <tr align=center>
+                <td ng-click="sendUrl(url);" style="color:blue">{{written}}</td>
+            </tr>
+            <tr align=center>
+                <td>{{spoken}}</td>
+            </tr>
+            <tr align=left ng-repeat="list in descsList">
+                <td>{{list.body}}</td>
+            </tr>
+            <tr>
+                <td>
+                    <dl id="result"></dl>
+                    <div class="map-wrapper"><div id="mapcanvas" style="width:100%; height:400px;"></div></div>
+                </td>
+            </tr>
+            <!--
+            <tr align=left>
+                <td>{{url}}</td>
+            </tr>
+            -->
+        </table>
+    </div>
+</ons-page>

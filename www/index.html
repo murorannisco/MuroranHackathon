@@ -1,0 +1,286 @@
+<!DOCTYPE HTML>
+<html ng-app="myApp">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <script src="components/loader.js"></script>
+    <script src="plugins/plugin-loader.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCTqUAjEX9zs5efuRoVeC2BHVsjFhzn57U"></script>
+    <link rel="stylesheet" href="components/loader.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script>
+        var app = angular.module('myApp', ['onsen']);
+
+        // 室蘭観光情報を提供するサービス
+        app.factory('TourismMainService', ['$http', function ($http) {
+            var tourismMainService = {};
+
+            tourismMainService.getMenu = function (callback) {
+                var url = 'https://www.chiikinogennki.soumu.go.jp/k-cloud-api/v001/kanko/' + encodeURI('展望施設') + '/json';
+                var config = {
+                    params: { code: '01205', limit: 50}
+                }
+                $http.get(url, config)
+                    .success(function (response) {
+                        callback(response);
+                    })
+                    .error(function () {
+                        //alert('取得失敗');
+                    });
+            }
+            return tourismMainService;
+        }]);
+
+        // 室蘭観光詳細情報を提供するサービス
+        app.factory('TourismDetailService', ['$http', function ($http) {
+            var tourismDetailService = {};
+
+            tourismDetailService.getDetail = function (placeName, callback) {
+                var url = 'https://www.chiikinogennki.soumu.go.jp/k-cloud-api/v001/kanko/' + encodeURI('展望施設') + '/json';
+                var config = {
+                    params: { code: '01205', limit: 50, name: encodeURI(placeName)}
+                }
+
+                $http.get(url, config)
+                    .success(function (response) {
+                        callback(response);
+                    })
+                    .error(function () {
+                        //alert('詳細取得失敗');
+                    });
+            }
+            return tourismDetailService;
+        }]);
+
+        // コントローラー間で観光地名称を共有するサービス
+        app.factory('SharedPlaceName', function () {
+            var sharedPlaceNameInfo = {};
+            sharedPlaceNameInfo.name = '';
+
+            sharedPlaceNameInfo.set = function (name) {
+                sharedPlaceNameInfo.name = name;
+            };
+
+            sharedPlaceNameInfo.get = function () {
+                return sharedPlaceNameInfo.name;
+            };
+            return sharedPlaceNameInfo;
+        });
+
+        // トップコントローラー
+        app.controller('TopController', ['$scope', 'SharedPlaceName',
+          function ($scope, SharedPlaceName) {
+              $scope.sendName = function ($event) {
+                  switch ($event.target.id){
+                      case 'pic-01':
+                        SharedPlaceName.set('チャラツナイ展望所');
+                        break;
+                      case 'pic-02':
+                        SharedPlaceName.set('トッカリショ展望ステージ');
+                        break;
+                      case 'pic-03':
+                        SharedPlaceName.set('マスイチ展望台');
+                        break;
+                      case 'pic-04':
+                        SharedPlaceName.set('絵鞆岬展望台');
+                        break;
+                      case 'pic-05':
+                        SharedPlaceName.set('祝津公園展望台');
+                        break;
+                      case 'pic-06':
+                        SharedPlaceName.set('測量山展望台');
+                        break;
+                      case 'pic-07':
+                        SharedPlaceName.set('白鳥大橋展望台');
+                        break;
+                      case 'pic-08':
+                        SharedPlaceName.set('白鳥湾展望台');
+                        break;
+                      case 'pic-09':
+                        SharedPlaceName.set('八丁平展望ステージ');
+                        break;
+                      case 'pic-10':
+                        SharedPlaceName.set('潮見公園展望台');
+                        break;
+                      case 'pic-11':
+                        SharedPlaceName.set('地球岬展望台');
+                        break;
+                  }
+              };
+          }]);
+
+        // メニューコントローラー
+        app.controller('MenuController', ['$scope', 'TourismMainService', 'SharedPlaceName',
+          function ($scope, TourismMainService, SharedPlaceName) {
+              TourismMainService.getMenu(function (data) {
+                  $scope.dataList = data.tourspots;
+              });
+
+              $scope.sendName = function (name) {
+                  SharedPlaceName.set(name);
+              };
+          }]);
+
+        // 詳細コントローラー
+        app.controller('TourismDetailController', ['$scope', 'SharedPlaceName', 'TourismDetailService',
+          function ($scope, SharedPlaceName, TourismDetailService) {
+              $scope.getDetail = function (placeName) {
+                  TourismDetailService.getDetail(placeName, function (data) {
+
+                      if (navigator.geolocation) {
+                          navigator.geolocation.getCurrentPosition(
+                              function (position) {
+                                  var nowData = position.coords;
+
+                                  // 現在地情報
+                                  var nowlatlng = new google.maps.LatLng(nowData.latitude, nowData.longitude);
+                                  var latlng = new google.maps.LatLng(data.tourspots[0].place.coordinates.latitude, data.tourspots[0].place.coordinates.longitude);
+                                  var map = new google.maps.Map(document.getElementById('mapcanvas'), {
+                                      zoom: 15,
+                                      center: nowlatlng,
+                                      partial_match : true
+                                  });
+                                  setRoute(nowlatlng, latlng, map);
+
+                                  //markToMap("現在地", nowlatlng, map);
+                                  //markToMap(data.tourspots[0].name.name1.written, latlng, map);
+                              },
+                              function (error) {
+                                  var errorInfo = [
+                                      "エラー：原因不明",
+                                      "エラー：位置情報取得が許可されていません。",
+                                      "エラー：位置情報の取得ができませんでした。",
+                                      "エラー：タイムアウトが発生しました。"
+                                  ];
+                                  var errorNo = error.code;
+                                  var errorMessage = "[エラー番号: " + errorNo + "]\n" + errorInfo[errorNo];
+                                  alert(errorMessage);
+                                  document.getElementById("result").innerHTML = errorMessage;
+                              },
+                              {
+                                  "enableHighAccuracy": false,
+                                  "timeout": 8000,
+                                  "maximumAge": 2000,
+                              }
+                          );
+                      };
+                      var imageName = '';
+                      switch (data.tourspots[0].name.name1.written){
+                          case 'チャラツナイ展望所':
+                            imageName = "images/pic-01.png";
+                            break;
+                          case 'トッカリショ展望ステージ':
+                            imageName = "images/pic-02.png";
+                            break;
+                          case 'マスイチ展望台':
+                            imageName = "images/pic-03.png";
+                            break;
+                          case '絵鞆岬展望台':
+                            imageName = "images/pic-04.png";
+                            break;
+                          case '祝津公園展望台':
+                            imageName = "images/pic-05.png";
+                            break;
+                          case '測量山展望台':
+                            imageName = "images/pic-06.png";
+                            break;
+                          case '白鳥大橋展望台':
+                            imageName = "images/pic-07.png";
+                            break;
+                          case '白鳥湾展望台':
+                            imageName = "images/pic-08.png";
+                            break;
+                          case '八丁平展望ステージ':
+                            imageName = "images/pic-09.png";
+                            break;
+                          case '潮見公園展望台':
+                            imageName = "images/pic-10.png";
+                            break;
+                          case '地球岬展望台':
+                            imageName = "images/pic-11.png";
+                            break;
+                      }
+
+                      //$scope.image = "images/" + data.tourspots[0].name.name1.written + ".png";
+                      $scope.image = imageName;
+                      $scope.written = data.tourspots[0].name.name1.written;
+                      $scope.spoken = data.tourspots[0].name.name1.spoken;
+                      $scope.descsList = data.tourspots[0].descs;
+                      $scope.url = data.tourspots[0].place.url;
+                  });
+              };
+
+            function setRoute(nowlatlng, latlng, map) {
+                var directionsService = new google.maps.DirectionsService();
+                var directionsDisplay = new google.maps.DirectionsRenderer();
+                directionsDisplay.setMap(map);
+                directionsService.route({
+                    origin: nowlatlng,
+                    destination: latlng,
+                    travelMode: google.maps.DirectionsTravelMode.DRIVING
+                }, function (response, status) {
+                    if (status == google.maps.DirectionsStatus.OK) {
+                        directionsDisplay.setDirections(response);
+                    } else {
+                        alert("ルート検索に失敗しました");
+                    }
+                });
+            };
+
+            function getRoute(nowlatlng, latlng, map) {
+                  //var request = {
+                  //    origin: nowlatlng,
+                  //    destination: latlng,
+                  //    travelMode: google.maps.DirectionsTravelMode.WALKING
+                  //}
+                  //directionsService.route(request, function (result, status) {
+                  //    directionsDisplay.setDirections(response);
+                  //});
+
+                rendererOptions = { draggable: true, preserveViewport: false };
+                var directionsDisplay = new google.maps.DirectionsRenderer(rendererOptions);
+                var directionsService = new google.maps.DirectionsService();
+
+                var request = {
+                    origin: nowlatlng,
+                    destination: latlng,
+                    travelMode: google.maps.DirectionsTravelMode.DRIVING,
+                    unitSystem: google.maps.DirectionsUnitSystem.METRIC,
+                    optimizeWaypoints: true,
+                    avoidHighways: false,
+                    avoidTolls: false
+                };
+                directionsService.route(request,
+                   function (response, status) {
+                       if (status == google.maps.DirectionsStatus.OK) {
+                           directionsDisplay.setDirections(response);
+                       }
+                   });
+              };
+
+              function markToMap(name, position, map) {
+                  var marker = new google.maps.Marker({
+                      position: position,
+                      title: name
+                  });
+                  marker.setMap(map);
+                  google.maps.event.addListener(marker, 'click', function () {
+                      var infowindow = new google.maps.InfoWindow({
+                          content: marker.title
+                      });
+                      infowindow.open(map, marker);
+                  });
+              };
+
+              $scope.getDetail(SharedPlaceName.get());
+
+              $scope.sendUrl = function (url) {
+                  window.open(url, '_blank');
+              };
+          }]);
+    </script>
+</head>
+<body>
+    <ons-sliding-menu menu-page="menu.html" main-page="top.html" side="left" type="overlay" max-slide-distance="200px"></ons-sliding-menu>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<ons-page ng-controller="MenuController">
+    <ons-list>
+        <ons-list-item modifier="tappable" class="list__item__line-height"
+                       ng-click="ons.slidingMenu.setMainPage('top.html', {closeMenu: true});">
+            <ons-icon icon="fa-home" size="20px" style="color: grey"></ons-icon>
+            &nbsp;TOP
+        </ons-list-item>
+        <ons-list-item>
+            -----------
+        </ons-list-item>
+        <ons-list-item ng-repeat="data in dataList"
+                       modifier="tappable" class="list__item__line-height"
+                       ng-click="ons.slidingMenu.setMainPage('detail.html', {closeMenu: true}); sendName(data.name.name1.written);">
+            <ons-icon icon="fa-sign-in" size="20px" style="color: grey"></ons-icon>
+            &nbsp; {{data.name.name1.written}}
+        </ons-list-item>
+</ons-page> 

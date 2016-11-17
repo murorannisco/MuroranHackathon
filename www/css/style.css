@@ -1,0 +1,34 @@
+.desc {
+  line-height: 1.3;
+  padding: 10px;
+}
+
+.date {
+  font-size: 80%;
+  text-align: right;
+}
+
+.map-wrapper
+{
+	max-width: 100% ;
+	padding-bottom: 75%;
+	position: relative;
+	top: 0;
+	left: 0;
+	height: 0;
+	overflow: hidden;
+}
+
+.map-wrapper > div
+{
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+
+.map-wrapper img
+{
+	max-width: none;
+}
